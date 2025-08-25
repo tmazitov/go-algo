@@ -1,4 +1,4 @@
-package src
+package rsa
 
 type RSAVersion int
 
