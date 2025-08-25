@@ -1,6 +1,9 @@
 package src
 
-import "math/big"
+import (
+	"errors"
+	"math/big"
+)
 
 type PublicKey struct {
 	N *big.Int
@@ -12,27 +15,37 @@ type PrivateKey struct {
 }
 
 type RSA struct {
-	p       *big.Int
-	q       *big.Int
 	public  *PublicKey
 	private *PrivateKey
+	version RSAVersion
 }
 
-func NewRSACoder() *RSA {
+func NewRSACoder(version RSAVersion, e int64) (*RSA, error) {
+
+	var E *big.Int = big.NewInt(e)
+
+	// Negative or zero
+	if E.Cmp(big.NewInt(0)) <= 0 {
+		return nil, ErrRSAInvalidArg
+	}
+
 	var (
-		instance   *RSA     = &RSA{}
-		p, q, e, d *big.Int = setupEnvirement()
-		N          *big.Int = p.Mul(p, q)
+		instance *RSA = &RSA{}
+		base     *rsaBase
+		err      error
 	)
 
-	instance.p = p
-	instance.q = q
+	if base, err = setupEnvirement(version, E); err != nil {
+		return nil, errors.Join(ErrRSAIntenal, err)
+	}
+
+	instance.version = version
 	instance.public = &PublicKey{
-		N: N,
-		E: e,
+		N: base.N,
+		E: E,
 	}
 	instance.private = &PrivateKey{
-		D: d,
+		D: base.d,
 	}
-	return instance
+	return instance, nil
 }

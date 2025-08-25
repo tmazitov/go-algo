@@ -4,17 +4,15 @@ import (
 	"math/big"
 )
 
-type Encoded struct {
-	Key []byte
-}
-
-func (r *RSA) Encode(value int64) int64 {
+// Encode encodes value using RSA algorithm. Returns an encrypted value.
+func (r *RSA) Encode(value string) *big.Int {
 	var (
-		origin  *big.Int = big.NewInt(value)
-		encoded *big.Int = big.NewInt(0)
+		valueBytes []byte   = []byte(value)
+		origin     *big.Int = big.NewInt(0).SetBytes(valueBytes)
+		encoded    *big.Int = big.NewInt(0)
 	)
 
 	encoded.Exp(origin, r.public.E, r.public.N)
 
-	return encoded.Int64()
+	return encoded
 }

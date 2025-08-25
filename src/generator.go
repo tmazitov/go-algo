@@ -2,9 +2,9 @@ package src
 
 import (
 	"math/big"
-	"math/rand"
 )
 
+// isGeneratedValid checks is generated values are valid for RSA algorithm.
 func isGeneratedValid(p, q, e *big.Int) bool {
 
 	var (
@@ -13,6 +13,14 @@ func isGeneratedValid(p, q, e *big.Int) bool {
 		gcd   *big.Int = big.NewInt(0)
 		euler *big.Int = big.NewInt(0)
 	)
+
+	if p.Cmp(q) == 0 {
+		return false
+	}
+
+	if !p.ProbablyPrime(20) || !q.ProbablyPrime(20) {
+		return false
+	}
 
 	// Values aren't prime to each other
 	if gcd.GCD(nil, nil, p, q).Cmp(one) != 0 {
@@ -30,44 +38,56 @@ func isGeneratedValid(p, q, e *big.Int) bool {
 	return true
 }
 
-func setupEnvirement() (*big.Int, *big.Int, *big.Int, *big.Int) {
+type rsaBase struct {
+	d *big.Int // private key (for decoding)
+	N *big.Int // public key (for encoding)
+}
+
+// setupEnvirement prepare all values for the future encoding/decoding.
+func setupEnvirement(version RSAVersion, e *big.Int) (*rsaBase, error) {
 
 	var (
-		p     *big.Int = big.NewInt(13)
-		q     *big.Int = big.NewInt(4)
-		e     *big.Int = big.NewInt(5)
-		d     *big.Int = big.NewInt(0)
-		extra *big.Int = big.NewInt(0)
-		one   *big.Int = big.NewInt(1)
-		mone  *big.Int = big.NewInt(-1)
+		p    *big.Int
+		q    *big.Int
+		base *rsaBase = &rsaBase{
+			d: nil,
+			N: nil,
+		}
+		extra      *big.Int = big.NewInt(0)
+		mone       *big.Int = big.NewInt(-1)
+		randomizer *Randomizer
+		err        error
 	)
-	if p.Sign() == -1 {
-		p.Abs(p)
-	}
-	if q.Sign() == -1 {
-		q.Abs(q)
-	}
 
-	for p.Cmp(q) == 0 || !isGeneratedValid(p, q, e) {
-		q = big.NewInt(rand.Int63())
-		p = big.NewInt(rand.Int63())
-		if p.Sign() == -1 {
-			p.Abs(p)
+	// 1. Using custom randomizer, generate 2 random prime values
+	// p and q. They shouldn't be equal and should be relatively prime to 'e' value. 
+	if randomizer, err = NewRandomizer(int(version)); err != nil {
+		return nil, err
+	}
+	defer randomizer.Close()
+
+	for {
+		if p, err = randomizer.GenerateBigInt(); err != nil {
+			return nil, err
 		}
-		if q.Sign() == -1 {
-			q.Abs(q)
+
+		if q, err = randomizer.GenerateBigInt(); err != nil {
+			return nil, err
+		}
+
+		if (isGeneratedValid(p, q, e)) {
+			break
 		}
 	}
 
-	euler := big.NewInt(0)
-	euler.Mul(p.Add(p, mone), q.Add(q, mone))
+	// 2. Calculate N value as a public key for the future encoding.
+	base.N = big.NewInt(0).Mul(p, q)
 
-	p.Add(p, one)
-	q.Add(q, one)
+	// 3. Calculate d value as a private key for the future decoding
+	euler := big.NewInt(0).Mul(p.Add(p, mone), q.Add(q, mone))
+	base.d = big.NewInt(0)
+	big.NewInt(0).GCD(base.d, extra, e, euler)
+	base.d = base.d.Mod(base.d, euler)
 
-	gcd := big.NewInt(0)
-	gcd.GCD(d, extra, e, euler)
-	d = d.Mod(d, euler)
-
-	return p, q, e, d
+	return base, nil
 }

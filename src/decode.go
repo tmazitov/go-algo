@@ -2,13 +2,15 @@ package src
 
 import "math/big"
 
-func (r *RSA) Decode(value int64) int64 {
+// Decode decodes value using RSA algorithm. Returns an original value.
+func (r *RSA) Decode(value *big.Int) string {
 	var (
-		origin  *big.Int = big.NewInt(value)
-		dencoded *big.Int = big.NewInt(0)
+		decoded *big.Int = big.NewInt(0)
+		decodedValue string
 	)
 
-	dencoded.Exp(origin, r.private.D, r.public.N)
+	decoded.Exp(value, r.private.D, r.public.N)
+	decodedValue = string(decoded.Bytes())
 
-	return dencoded.Int64()
+	return decodedValue
 }
