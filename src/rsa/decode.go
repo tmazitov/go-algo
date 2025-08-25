@@ -3,14 +3,18 @@ package rsa
 import "math/big"
 
 // Decode decodes value using RSA algorithm. Returns an original value.
-func (r *RSA) Decode(value *big.Int) string {
+func (r *Client) Decode(value []byte) ([]byte, error) {
+
+	if len(value) >= int(r.version) {
+		return []byte{}, ErrRSAValueTooLong
+	}
+
 	var (
+		origin  *big.Int = big.NewInt(0).SetBytes(value)
 		decoded *big.Int = big.NewInt(0)
-		decodedValue string
 	)
 
-	decoded.Exp(value, r.private.D, r.public.N)
-	decodedValue = string(decoded.Bytes())
+	decoded.Exp(origin, r.keys.Private.D, r.keys.Public.N)
 
-	return decodedValue
+	return decoded.Bytes(), nil
 }

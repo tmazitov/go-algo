@@ -10,18 +10,24 @@ func main() {
 
 	var (
 		base    int64  = 71
-		message string = "Hello world!"
-		coder   *rsa.RSA
-		version rsa.RSAVersion = rsa.RSA128
+		message string = "Hello! My name is Timur!"
+		client  *rsa.Client
+		version rsa.RSAVersion = rsa.RSA256
 		err     error
 	)
 
-	if coder, err = rsa.NewRSACoder(version, base); err != nil {
+	if client, err = rsa.NewClient(version, base); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Origin: %s\n", message)
-	encoded := coder.Encode(message)
-	fmt.Printf("Encoded: %d\n", encoded)
-	decoded := coder.Decode(encoded)
-	fmt.Printf("Decoded: %s\n", decoded)
+	fmt.Printf("Origin: %v\n", message)
+	encoded, err := client.Encode([]byte(message))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Encoded: %v\n", encoded)
+	decoded, err := client.Decode(encoded)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Decoded: %v\n", string(decoded))
 }

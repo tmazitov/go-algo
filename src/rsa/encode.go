@@ -5,14 +5,18 @@ import (
 )
 
 // Encode encodes value using RSA algorithm. Returns an encrypted value.
-func (r *RSA) Encode(value string) *big.Int {
+func (r *Client) Encode(value []byte) ([]byte, error) {
+
+	if len(value) >= int(r.version)/8 {
+		return []byte{}, ErrRSAValueTooLong
+	}
+
 	var (
-		valueBytes []byte   = []byte(value)
-		origin     *big.Int = big.NewInt(0).SetBytes(valueBytes)
-		encoded    *big.Int = big.NewInt(0)
+		origin  *big.Int = big.NewInt(0).SetBytes(value)
+		encoded *big.Int = big.NewInt(0)
 	)
 
-	encoded.Exp(origin, r.public.E, r.public.N)
+	encoded.Exp(origin, r.keys.Public.E, r.keys.Public.N)
 
-	return encoded
+	return encoded.Bytes(), nil
 }

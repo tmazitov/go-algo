@@ -7,4 +7,5 @@ import (
 var (
 	ErrRSAInvalidArg error = errors.New("rsa coder error: coder base should be prime and positive")
 	ErrRSAIntenal error = errors.New("rsa coder error: internal")
+	ErrRSAValueTooLong error = errors.New("rsa coder error: bytes array is too long for this algorithm")
 )
